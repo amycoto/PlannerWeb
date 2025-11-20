@@ -21,7 +21,7 @@ export const SessionController = {
     return SessionModel.createSession(formData);
   },
 
-  handleEditSession(id: string, updatedData: Partial<Session>): void {
+  handleEditSession(id: string, updatedData: SessionData): void {
     // Preconditions: id exists in storage
     // Actions: Updates session details using SessionModel.updateSession
     // Postconditions: Session changes persisted and UI refreshed
