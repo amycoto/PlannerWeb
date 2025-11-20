@@ -1,12 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { SessionModel } from './models/SessionModel.ts'
+import { useState } from 'react';
+import NavigationView from './views/NavigationView';
+import TodayView from './views/TodayView';
+import CalendarView from './views/CalendarView';
+
+// Placeholder components for tabs we haven't built yet
+// This prevents the app from crashing when you click other tabs
+const AnalyticsPlaceholder = () => <div className="p-4 text-center text-gray-500">Analytics View (Coming Soon)</div>;
+const SettingsPlaceholder = () => <div className="p-4 text-center text-gray-500">Settings View (Coming Soon)</div>;
 
 function App() {
-  const [count, setCount] = useState(0)
+  // State to track which view is currently visible
+  // Defaults to "today" as per requirements
+  const [activeTab, setActiveTab] = useState("today");
 
+  // Helper function to render the correct component based on state
+  const renderContent = () => {
+    switch (activeTab) {
+      case "calendar":
+        return <CalendarView />;
+      case "today":
+        return <TodayView />;
+      case "analytics":
+        return <AnalyticsPlaceholder />;
+      case "settings":
+        return <SettingsPlaceholder />;
+      default:
+        return <TodayView />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen min-w-screen bg-gray-50 text-gray-900 font-sans">
+      {/* Header / Title Area */}
+      <header className="bg-blue-600 text-white p-4 shadow-md">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold">My Study Tracker</h1>
+        </div>
+      </header>
+
+      {/* Main Layout Container */}
+      <main className="max-w-4xl mx-auto mt-6 p-4">
+        
+        {/* 1. Navigation Bar */}
+        <div className="mb-6">
+          <NavigationView 
+            activeTab={activeTab} 
+            onChangeTab={setActiveTab} 
+          />
+        </div>
+
+        {/* 2. The Active View */}
+        <div className="bg-white rounded-lg shadow min-h-[400px]">
+          {renderContent()}
+        </div>
+
+      </main>
+    </div>
+  );
+}
+
+export default App;
+
+/* SessionModel Test Code
   try {
     console.log("Initial Sessions:", SessionModel.getAllSessions());
 
@@ -28,22 +83,4 @@ function App() {
     console.error(e);
   }
 
-  return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
-
-export default App
+*/

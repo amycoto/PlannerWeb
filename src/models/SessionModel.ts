@@ -41,9 +41,10 @@ const timeToMinutes = (timeStr: string): number => {
   return h * 60 + m;
 };
 
-const validateSessionRules = (newSession: SessionData, existingSessions: Session[]) => {
+const validateSessionRules = (newSession: SessionData, existingSessions: Session[], excludeId?: string) => {
   // 1. Field Format Validation
   if (!newSession.title) throw new Error("Title is required");
+  if (!newSession.subject) throw new Error("Subject is required");
   if (newSession.duration <= 0) throw new Error("Duration must be > 0");
   
   // 2. Cross Midnight Check
@@ -54,6 +55,8 @@ const validateSessionRules = (newSession: SessionData, existingSessions: Session
   // 3. Overlap Prevention
   const sessionsOnDate = existingSessions.filter(s => s.date === newSession.date);
   for (const s of sessionsOnDate) {
+    // Skip the session being edited 
+    if (excludeId && s.id === excludeId) continue;
     const sStart = timeToMinutes(s.startTime);
     const sEnd = sStart + s.duration;
     // Overlap logic: (StartA < EndB) and (EndA > StartB)
@@ -118,9 +121,20 @@ export const SessionModel = {
     if (index === -1) {
       throw new Error(`Session with id ${id} not found.`);
     }
+    const currentSession = data.sessions[index];
 
-    // Merge existing session with updated data
-    data.sessions[index] = { ...data.sessions[index], ...updatedData };
+    // Create the "Candidate" session (Merge old data with new data)
+    // We need the full object to run validation (e.g., if only duration changed, we need startTime)
+    const candidateSession: Session = {
+      ...currentSession,
+      ...updatedData
+    };
+
+    // Validate the Candidate (passing the ID to exclude self-collision)
+    validateSessionRules(candidateSession, data.sessions, id);
+
+    // Save
+    data.sessions[index] = candidateSession;
     setStorage(data);
   },
 
