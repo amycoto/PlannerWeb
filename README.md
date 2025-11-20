@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# Student Study Tracker (MVP)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The Student Study Tracker is a lightweight, single-page web application designed to help undergraduate students plan, track, and analyze their study sessions. This project is an academic MVP built with **React**, **TypeScript**, and **Vite**.
 
-Currently, two official plugins are available:
+## Project Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+College students often struggle to manage study time effectively using tools that are either too complex or too generic. This application provides a focused environment to schedule study blocks and track completion, aiming to reduce procrastination and establish consistent study habits.
 
-## React Compiler
+The application follows a **Client-Side MVC (Model-View-Controller)** architecture and runs entirely in the browser. It does not require user accounts or a remote server; all data is persisted locally on the user's device using `localStorage`.
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+## Key Features
 
-## Expanding the ESLint configuration
+### Session Management
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* **CRUD Operations:** Users can create, edit, and delete study sessions containing a Title, Subject, Date, Start Time, and Duration.
+* **Views:**
+    * **Today's Schedule:** A list view of the current day's sessions, sorted by time.
+    * **Weekly Calendar:** A 7-day column view (Sunday-Saturday) for broader planning.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Business Logic & Validation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+* **Overlap Prevention:** The system automatically validates inputs to prevent scheduling conflicting sessions.
+* **Data Integrity:** Ensures valid dates and prevents sessions that cross midnight (MVP constraint).
+* **Immediate Persistence:** All changes are instantly saved to the browser's local storage.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Analytics & Tracking
+
+* **Subject Analytics:** A weekly bar chart visualizes the total minutes studied per subject.
+* **Completion Tracking:** Users can mark sessions as "Complete," visually distinguishing them with a strikethrough and opacity change.
+* **Reminders:** An optional setting triggers a browser popup when a session ends (if the application tab is active).
+
+## Technical Architecture
+
+* **Framework:** React + TypeScript
+* **Build Tool:** Vite
+* **Styling:** Tailwind CSS
+* **Architecture Pattern:** Client-Side MVC
+    * **Models:** Handle data validation (overlap checks), CRUD logic, and storage interfacing.
+    * **Views:** React components responsible for UI rendering and user interaction.
+    * **Controllers:** Orchestrate communication between Models and Views.
+* **Data Storage:** Browser `localStorage` using a specific JSON schema.
+
+## Getting Started
+
+### Prerequisites
+
+* Node.js installed on your machine.
+
+### Installation
+
+1. Clone the repository.
+2. Install project dependencies:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Running the Application
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Start the local development server:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+
+```bash
+npm run dev
 ```
+
+Open your browser to the local URL provided (typically http://localhost:5173).
+
+
+## MVP Limitations
+
+As defined in the requirements, this MVP has the following constraints:
+
+* Local Storage Only: Clearing the browser cache will delete all application data. Data does not sync between devices.
+* Cross-Midnight Sessions: Sessions must start and end on the same calendar day.
+* Single User: The application supports one user profile per browser instance.
