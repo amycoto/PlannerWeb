@@ -1,25 +1,42 @@
 // StorageService.ts
 // Purpose: Handles reading and writing structured data to localStorage.
+import type { Session } from "./SessionModel";
+import type { Settings } from "./SettingsModel";
 
+const STORAGE_KEY = "studyTrackerData";
 export interface StoredData {
-  sessions: unknown[];
-  settings: unknown;
+  sessions: Session[];
+  settings: Settings;
+}
+
+const DEFAULT_DATA: StoredData = {
+  sessions: [],
+  settings: {remindersEnabled: true},
 }
 
 export const StorageService = {
-  readData(): StoredData {
-    // Returns: parsed JSON object from localStorage or default schema
-    throw new Error("Not implemented");
+readData(): StoredData {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      this.writeData(DEFAULT_DATA);
+      return DEFAULT_DATA;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      console.error("Data corrupt, resetting", error);
+      return DEFAULT_DATA;
+    }
   },
 
   writeData(data: StoredData): void {
     // Preconditions: data matches defined schema
     // Postconditions: data serialized to localStorage
-    throw new Error("Not implemented");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   },
 
   clearData(): void {
     // Postconditions: removes studyTrackerData key from localStorage
-    throw new Error("Not implemented");
+    localStorage.removeItem(STORAGE_KEY);
   },
 };
