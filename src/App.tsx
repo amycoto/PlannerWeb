@@ -1,86 +1,206 @@
-import { useState } from 'react';
-import NavigationView from './views/NavigationView';
-import TodayView from './views/TodayView';
-import CalendarView from './views/CalendarView';
+import { useEffect, useMemo, useState } from "react";
+import NavigationView from "./views/NavigationView";
+import TodayView from "./views/TodayView";
+import CalendarView from "./views/CalendarView";
+import AnalyticsView from "./views/AnalyticsView";
+import SettingsView from "./views/SettingsView";
+import ReminderView from "./views/ReminderView";
 
-// Placeholder components for tabs we haven't built yet
-// This prevents the app from crashing when you click other tabs
-const AnalyticsPlaceholder = () => <div className="p-4 text-center text-gray-500">Analytics View (Coming Soon)</div>;
-const SettingsPlaceholder = () => <div className="p-4 text-center text-gray-500">Settings View (Coming Soon)</div>;
+import { SessionController } from "./controllers/SessionController";
+import { SettingsController } from "./controllers/SettingsController";
+import { ReminderController } from "./controllers/ReminderController";
+
+import type { Session } from "./models/SessionModel";
+import type { Settings } from "./models/SettingsModel";
+
+interface AnalyticsData {
+  subject: string;
+  totalMinutes: number;
+}
+
+// Sunday of current week
+const getCurrentWeekStartDate = (): string => {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day;
+  const sunday = new Date(today);
+  sunday.setDate(diff);
+
+  const year = sunday.getFullYear();
+  const month = String(sunday.getMonth() + 1).padStart(2, "0");
+  const date = String(sunday.getDate()).padStart(2, "0");
+  return `${year}-${month}-${date}`;
+};
+
+const MOTIVATION_MESSAGES = [
+  "Nice work — you’re building great habits 💪",
+  "Session done! Future you says thank you ✨",
+  "You showed up today. That matters a lot 📚",
+  "Another block finished — keep the momentum going 🚀",
+];
 
 function App() {
-  // State to track which view is currently visible
-  // Defaults to "today" as per requirements
   const [activeTab, setActiveTab] = useState("today");
 
-  // Helper function to render the correct component based on state
+  const [settings, setSettings] = useState<Settings>(() =>
+    SettingsController.loadSettings()
+  );
+
+  const [reminderSession, setReminderSession] = useState<Session | null>(null);
+
+  // For re-computing analytics when sessions change
+  const [analyticsVersion, setAnalyticsVersion] = useState(0);
+
+  const weekStart = getCurrentWeekStartDate();
+
+  const analyticsData: AnalyticsData[] = useMemo(() => {
+    const sessions = SessionController.loadSessionsForWeek(weekStart);
+    const totals = new Map<string, number>();
+
+    for (const s of sessions) {
+      const prev = totals.get(s.subject) ?? 0;
+      totals.set(s.subject, prev + s.duration);
+    }
+
+    return Array.from(totals.entries()).map(([subject, totalMinutes]) => ({
+      subject,
+      totalMinutes,
+    }));
+  }, [weekStart, analyticsVersion]);
+
+  // Listen for session updates so analytics refreshes
+  useEffect(() => {
+    const handleUpdated = () => {
+      setAnalyticsVersion((v) => v + 1);
+    };
+
+    window.addEventListener("session-updated", handleUpdated);
+    return () => window.removeEventListener("session-updated", handleUpdated);
+  }, []);
+
+  // Hook up reminder controller
+  useEffect(() => {
+    ReminderController.registerHandler((session) => {
+      setReminderSession(session);
+    });
+    ReminderController.startReminderTimer();
+
+    return () => {
+      ReminderController.stopReminderTimer();
+      ReminderController.registerHandler(null);
+    };
+  }, []);
+
+  const handleToggleReminders = (enabled: boolean) => {
+    SettingsController.toggleReminders(enabled);
+    setSettings((prev) => ({ ...prev, remindersEnabled: enabled }));
+  };
+
+  const handleToggleDarkMode = (enabled: boolean) => {
+    SettingsController.toggleDarkMode(enabled);
+    setSettings((prev) => ({ ...prev, darkModeEnabled: enabled }));
+  };
+
+  const handleToggleMotivational = (enabled: boolean) => {
+    SettingsController.toggleMotivationalMessages(enabled);
+    setSettings((prev) => ({ ...prev, motivationalMessagesEnabled: enabled }));
+  };
+
+  const handleToggleQuickAdd = (enabled: boolean) => {
+    SettingsController.toggleQuickAdd(enabled);
+    setSettings((prev) => ({ ...prev, quickAddEnabled: enabled }));
+  };
+
+  const handleReminderConfirm = () => {
+    if (reminderSession) {
+      SessionController.markSessionComplete(reminderSession.id, true);
+      window.dispatchEvent(new Event("session-updated"));
+
+      if (settings.motivationalMessagesEnabled) {
+        const msg =
+          MOTIVATION_MESSAGES[
+            Math.floor(Math.random() * MOTIVATION_MESSAGES.length)
+          ];
+        window.setTimeout(() => {
+          alert(msg);
+        }, 100);
+      }
+    }
+    setReminderSession(null);
+  };
+
+  const handleReminderDismiss = () => {
+    setReminderSession(null);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "calendar":
         return <CalendarView />;
       case "today":
-        return <TodayView />;
+        return (
+          <TodayView
+            quickAddEnabled={settings.quickAddEnabled}
+            motivationalMessagesEnabled={settings.motivationalMessagesEnabled}
+          />
+        );
       case "analytics":
-        return <AnalyticsPlaceholder />;
+        return <AnalyticsView data={analyticsData} />;
       case "settings":
-        return <SettingsPlaceholder />;
+        return (
+          <SettingsView
+            remindersEnabled={settings.remindersEnabled}
+            darkModeEnabled={settings.darkModeEnabled}
+            motivationalMessagesEnabled={settings.motivationalMessagesEnabled}
+            quickAddEnabled={settings.quickAddEnabled}
+            onToggleReminders={handleToggleReminders}
+            onToggleDarkMode={handleToggleDarkMode}
+            onToggleMotivationalMessages={handleToggleMotivational}
+            onToggleQuickAdd={handleToggleQuickAdd}
+          />
+        );
       default:
         return <TodayView />;
     }
   };
 
+  const rootBg =
+    settings.darkModeEnabled === true
+      ? "bg-slate-900 text-slate-100"
+      : "bg-gray-50 text-gray-900";
+
+  const cardBg = settings.darkModeEnabled ? "bg-slate-800" : "bg-white";
+  const headerBg = settings.darkModeEnabled ? "bg-slate-900" : "bg-blue-600";
+
   return (
-    <div className="min-h-screen min-w-screen bg-gray-50 text-gray-900 font-sans">
-      {/* Header / Title Area */}
-      <header className="bg-blue-600 text-white p-4 shadow-md">
+    <div className={`min-h-screen font-sans ${rootBg}`}>
+      {/* Header */}
+      <header className={`${headerBg} text-white p-4 shadow-md`}>
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold">My Study Tracker</h1>
         </div>
       </header>
 
-      {/* Main Layout Container */}
+      {/* Main Content */}
       <main className="max-w-4xl mx-auto mt-6 p-4">
-        
-        {/* 1. Navigation Bar */}
         <div className="mb-6">
-          <NavigationView 
-            activeTab={activeTab} 
-            onChangeTab={setActiveTab} 
-          />
+          <NavigationView activeTab={activeTab} onChangeTab={setActiveTab} />
         </div>
 
-        {/* 2. The Active View */}
-        <div className="bg-white rounded-lg shadow min-h-[400px]">
+        <div className={`${cardBg} rounded-lg shadow min-h-[400px]`}>
           {renderContent()}
         </div>
-
       </main>
+
+      {settings.remindersEnabled && reminderSession && (
+        <ReminderView
+          session={reminderSession}
+          onConfirm={handleReminderConfirm}
+          onDismiss={handleReminderDismiss}
+        />
+      )}
     </div>
   );
 }
 
 export default App;
-
-/* SessionModel Test Code
-  try {
-    console.log("Initial Sessions:", SessionModel.getAllSessions());
-
-    const newSession = SessionModel.createSession({
-      title: "Test Session",
-      subject: "CS123",
-      date:"2025-11-20",
-      startTime:"10:00",
-      duration:60
-    });
-    console.log("Created Session:", newSession);
-
-    console.log("Sessions after creation:", SessionModel.getAllSessions());
-
-    SessionModel.updateSession(newSession.id, { completed: true });
-    console.log("Updaed Completed Session:", SessionModel.getAllSessions());
-
-  } catch(e){
-    console.error(e);
-  }
-
-*/

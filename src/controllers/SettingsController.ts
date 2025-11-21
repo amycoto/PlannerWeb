@@ -5,15 +5,29 @@ import { SettingsModel, type Settings } from "../models/SettingsModel";
 
 export const SettingsController = {
   loadSettings(): Settings {
-    // Actions: Loads settings from model
-    // Returns: Current settings object to render in SettingsView
-    throw new Error("Not implemented");
+    return SettingsModel.getSettings();
   },
 
   toggleReminders(enabled: boolean): void {
-    // Preconditions: enabled is a valid boolean
-    // Actions: Updates reminder preference in SettingsModel and persists to localStorage
-    // Postconditions: UI reflects new reminder setting
-    throw new Error("Not implemented");
+    const current = SettingsModel.getSettings();
+    SettingsModel.updateSettings({ ...current, remindersEnabled: enabled });
+  },
+
+  toggleDarkMode(enabled: boolean): void {
+    const current = SettingsModel.getSettings();
+    SettingsModel.updateSettings({ ...current, darkModeEnabled: enabled });
+  },
+
+  toggleMotivationalMessages(enabled: boolean): void {
+    const current = SettingsModel.getSettings();
+    SettingsModel.updateSettings({
+      ...current,
+      motivationalMessagesEnabled: enabled,
+    });
+  },
+
+  toggleQuickAdd(enabled: boolean): void {
+    const current = SettingsModel.getSettings();
+    SettingsModel.updateSettings({ ...current, quickAddEnabled: enabled });
   },
 };
