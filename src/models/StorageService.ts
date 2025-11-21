@@ -11,8 +11,13 @@ export interface StoredData {
 
 const DEFAULT_DATA: StoredData = {
   sessions: [],
-  settings: {remindersEnabled: true},
-}
+  settings: {
+    remindersEnabled: true,
+    darkModeEnabled: false,
+    motivationalMessagesEnabled: false,
+    quickAddEnabled: true,
+  },
+};
 
 export const StorageService = {
 readData(): StoredData {
