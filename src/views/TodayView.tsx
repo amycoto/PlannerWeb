@@ -3,7 +3,22 @@ import type { Session, SessionData } from "../models/SessionModel";
 import { SessionController } from "../controllers/SessionController";
 import SessionForm from "./SessionForm";
 
-const TodayView: React.FC = () => {
+interface TodayViewProps {
+  quickAddEnabled?: boolean;
+  motivationalMessagesEnabled?: boolean;
+}
+
+const MOTIVATION_MESSAGES = [
+  "Nice work! You’re building great habits",
+  "Session done! Future you says thank you",
+  "You showed up today. That matters a lot!",
+  "Another block finished!! Keep the momentum going",
+];
+
+const TodayView: React.FC<TodayViewProps> = ({
+  quickAddEnabled = false,
+  motivationalMessagesEnabled = false,
+}) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -14,6 +29,13 @@ const TodayView: React.FC = () => {
 
   useEffect(() => {
     loadData();
+
+    const handleUpdated = () => {
+      loadData();
+    };
+
+    window.addEventListener("session-updated", handleUpdated);
+    return () => window.removeEventListener("session-updated", handleUpdated);
   }, []);
 
   const openCreateForm = () => {
@@ -35,35 +57,84 @@ const TodayView: React.FC = () => {
     setIsFormOpen(false);
     setEditingSession(null);
     loadData();
+    window.dispatchEvent(new Event("session-updated"));
   };
 
   const handleMarkComplete = (id: string, currentStatus: boolean) => {
     SessionController.markSessionComplete(id, !currentStatus);
-    loadData(); 
+    loadData();
+    window.dispatchEvent(new Event("session-updated"));
+
+    if (!currentStatus && motivationalMessagesEnabled) {
+      const msg =
+        MOTIVATION_MESSAGES[
+          Math.floor(Math.random() * MOTIVATION_MESSAGES.length)
+        ];
+      window.setTimeout(() => {
+        alert(msg);
+      }, 100);
+    }
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this session?")) {
       SessionController.handleDeleteSession(id);
       loadData();
+      window.dispatchEvent(new Event("session-updated"));
     }
   };
 
-  // Shared styles for all action buttons to ensure uniformity
-  const baseButtonClass = "text-sm px-3 py-1 rounded border font-medium transition-colors cursor-pointer shadow-sm";
+  // Quick Add: one-click default 25-min block for today
+  const handleQuickAdd = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const date = `${year}-${month}-${day}`;
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const startTime = `${hours}:${minutes}`;
+
+    const data: SessionData = {
+      title: "Quick Study Block",
+      subject: "General",
+      date,
+      startTime,
+      duration: 25,
+    };
+
+    SessionController.handleCreateSession(data);
+    loadData();
+    window.dispatchEvent(new Event("session-updated"));
+  };
+
+  const baseButtonClass =
+    "text-sm px-3 py-1 rounded border font-medium transition-colors cursor-pointer shadow-sm";
 
   return (
     <div className="max-w-3xl mx-auto mt-6 p-4">
-      <div className="flex justify-between items-center mb-6">
+      {/* Header + buttons */}
+      <div className="flex justify-between items-center mb-6 gap-3">
         <h2 className="text-2xl font-bold text-gray-800">Today's Schedule</h2>
-        <button 
-          onClick={openCreateForm} 
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition shadow cursor-pointer font-medium"
-        >
-          + Add Session
-        </button>
+        <div className="flex gap-2">
+          {quickAddEnabled && (
+            <button
+              onClick={handleQuickAdd}
+              className="bg-blue-50 text-blue-700 px-3 py-2 rounded border border-blue-200 hover:bg-blue-100 transition shadow cursor-pointer text-sm font-medium"
+            >
+              ⚡ Quick Add 25 min
+            </button>
+          )}
+          <button
+            onClick={openCreateForm}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition shadow cursor-pointer font-medium"
+          >
+            + Add Session
+          </button>
+        </div>
       </div>
 
+      {/* No sessions message */}
       {sessions.length === 0 ? (
         <div className="text-gray-500 text-center py-10 bg-gray-50 rounded border border-dashed">
           No sessions scheduled for today.
@@ -71,56 +142,66 @@ const TodayView: React.FC = () => {
       ) : (
         <ul className="space-y-3">
           {sessions.map((session) => (
-            <li 
-              key={session.id} 
+            <li
+              key={session.id}
               className={`p-4 border rounded-lg shadow-sm flex justify-between items-center transition-all ${
                 session.completed ? "bg-gray-50 opacity-75" : "bg-white"
               }`}
             >
-              <div 
+              {/* Clickable details */}
+              <div
                 onClick={() => openEditForm(session)}
                 className="cursor-pointer flex-grow"
               >
                 <div className="flex items-center gap-2">
-                  {session.completed && <span className="text-green-600 font-bold">✓</span>}
-                  <span className={`font-semibold text-lg ${session.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
+                  {session.completed && (
+                    <span className="text-green-600 font-bold">✓</span>
+                  )}
+                  <span
+                    className={`font-semibold text-lg ${
+                      session.completed
+                        ? "line-through text-gray-500"
+                        : "text-gray-800"
+                    }`}
+                  >
                     {session.title}
                   </span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  <span className="font-medium text-blue-600">{session.startTime}</span> 
-                  <span className="mx-2">•</span> 
+                  <span className="font-medium text-blue-600">
+                    {session.startTime}
+                  </span>
+                  <span className="mx-2">•</span>
                   {session.subject} ({session.duration} min)
                 </div>
               </div>
 
+              {/* Action buttons */}
               <div className="flex gap-2 items-center">
-                
-                {/*Edit Button (Neutral Gray) */}
-                <button 
+                <button
                   onClick={() => openEditForm(session)}
                   className={`${baseButtonClass} border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400`}
                 >
                   Edit
                 </button>
 
-                {/* Complete Button (Blue for active, Gray for undo) */}
-                <button 
-                  onClick={() => handleMarkComplete(session.id, session.completed)}
+                <button
+                  onClick={() =>
+                    handleMarkComplete(session.id, session.completed)
+                  }
                   className={`${baseButtonClass} ${
-                    session.completed 
-                      ? "border-gray-300 text-gray-500 hover:bg-gray-100" 
+                    session.completed
+                      ? "border-gray-300 text-gray-500 hover:bg-gray-100"
                       : "border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
                   }`}
                 >
                   {session.completed ? "Undo" : "Complete"}
                 </button>
-                
-                {/* Delete Button (Red) */}
-                <button 
+
+                <button
                   onClick={(e) => {
-                     e.stopPropagation(); 
-                     handleDelete(session.id);
+                    e.stopPropagation();
+                    handleDelete(session.id);
                   }}
                   className={`${baseButtonClass} border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300`}
                 >
@@ -132,11 +213,15 @@ const TodayView: React.FC = () => {
         </ul>
       )}
 
+      {/* Modal form */}
       {isFormOpen && (
-        <SessionForm 
-          initialData={editingSession} 
+        <SessionForm
+          initialData={editingSession}
           onSubmit={handleFormSubmit}
-          onCancel={() => { setIsFormOpen(false); setEditingSession(null); }}
+          onCancel={() => {
+            setIsFormOpen(false);
+            setEditingSession(null);
+          }}
         />
       )}
     </div>
