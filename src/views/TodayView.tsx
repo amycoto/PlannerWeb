@@ -115,7 +115,7 @@ const TodayView: React.FC<TodayViewProps> = ({
     <div className="max-w-3xl mx-auto mt-6 p-4">
       {/* Header + buttons */}
       <div className="flex justify-between items-center mb-6 gap-3">
-        <h2 className="text-2xl font-bold text-gray-800">Today's Schedule</h2>
+        <h2 className="text-2xl font-bold">Today's Schedule</h2>
         <div className="flex gap-2">
           {quickAddEnabled && (
             <button

@@ -52,7 +52,6 @@ const SessionForm: React.FC<SessionFormProps> = ({ initialData, onSubmit, onCanc
       onSubmit(formData);
     } catch (err: unknown) {
       // 2. CATCH THE MODEL ERRORS HERE
-      // This satisfies the requirement: "Show an inline error that names the missing field"
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -62,73 +61,77 @@ const SessionForm: React.FC<SessionFormProps> = ({ initialData, onSubmit, onCanc
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+    // UPDATE 1: Overlay - Added dark background with opacity, blur, and z-index
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      
+      {/* UPDATE 2: Modal Card - Added explicit background colors for Light/Dark mode */}
+      <div className="p-6 rounded-lg border shadow-xl w-full max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">
+        
         <h2 className="text-xl font-bold mb-4">
           {initialData ? "Edit Session" : "New Session"}
         </h2>
 
-        {/* Requirement: Inline Error Display */}
         {error && (
-          <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm border border-red-300 rounded">
+          <div className="mb-4 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 text-sm border border-red-300 dark:border-red-800 rounded">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">Title</label>
+            <label className="block text-sm font-medium mb-1">Title</label>
             <input
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              // UPDATE 3: Inputs - Added dark mode background and border colors
+              className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="e.g. Chapter 4 Review"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Subject</label>
+            <label className="block text-sm font-medium mb-1">Subject</label>
             <input
               name="subject"
               value={formData.subject}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="e.g. Math"
             />
           </div>
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium">Date (YYYY-MM-DD)</label>
+              <label className="block text-sm font-medium mb-1">Date</label>
               <input
                 type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                className="w-full border p-2 cursor-pointer rounded"
+                className="w-full border p-2 rounded cursor-pointer bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium">Start Time (24h)</label>
+              <label className="block text-sm font-medium mb-1">Start Time</label>
               <input
                 type="time"
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="w-full border p-2 cursor-pointer rounded"
+                className="w-full border p-2 rounded cursor-pointer bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Duration (minutes)</label>
+            <label className="block text-sm font-medium mb-1">Duration (minutes)</label>
             <input
               type="number"
               name="duration"
               value={formData.duration}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
@@ -136,13 +139,14 @@ const SessionForm: React.FC<SessionFormProps> = ({ initialData, onSubmit, onCanc
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 bg-gray-200 cursor-pointer rounded hover:bg-gray-300"
+              // UPDATE 4: Cancel Button - Added dark mode styling
+              className="px-4 py-2 rounded cursor-pointer transition-colors bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white cursor-pointer rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white cursor-pointer rounded hover:bg-blue-700 transition-colors shadow-sm"
             >
               Save
             </button>
